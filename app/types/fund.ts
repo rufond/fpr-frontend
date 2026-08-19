@@ -65,3 +65,22 @@ export interface LiveValuation {
   live_delta_usd: string
   live_coverage_percent: string
 }
+
+export interface FundMarketHistory {
+  unit_prices: IntradayMarketPrice[]
+  live_values: LiveValuePoint[]
+}
+
+export interface IntradayMarketPrice {
+  unit_value: string
+  currency: string
+  priced_at: string
+}
+
+export interface LiveValuePoint {
+  observed_at: string
+  estimated_nav_usd: string
+  estimated_calculated_unit_value_usd: string
+  live_delta_usd: string
+  live_coverage_percent: string
+}

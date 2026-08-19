@@ -3,12 +3,22 @@ import { useFundRealtime } from "~/composables/useFundRealtime"
 import { fundInfo } from '~/data/fund'
 import { formatDate, formatNumber, formatPercent } from '~/utils/format'
 
+const FundIntradayHistory = defineAsyncComponent(() => import('~/components/FundIntradayHistory.vue'))
+
 const { state, error, refresh } = useFundState()
 
 useFundRealtime()
 
 const snapshot = computed(() => state.value?.official_snapshot)
 const market = computed(() => state.value?.market)
+
+const historyRequested = ref(false)
+const historyVisible = ref(false)
+
+function toggleHistory() {
+  historyRequested.value = true
+  historyVisible.value = !historyVisible.value
+}
 </script>
 
 <template>
@@ -52,6 +62,15 @@ const market = computed(() => state.value?.market)
             <p class="eyebrow">Текущее состояние</p>
             <h2>Данные на {{ formatDate(snapshot.as_of_date) }}</h2>
           </div>
+
+          <button
+              class="history-toggle"
+              type="button"
+              :aria-expanded="historyVisible"
+              @click="toggleHistory"
+          >
+            {{ historyVisible ? 'Скрыть динамику' : 'Динамика 24 часа' }}
+          </button>
         </div>
 
         <div class="metrics-grid">
@@ -104,6 +123,11 @@ const market = computed(() => state.value?.market)
             <small>текущий курс MOEX</small>
           </article>
         </div>
+
+        <FundIntradayHistory
+            v-if="historyRequested"
+            v-show="historyVisible"
+        />
       </section>
 
       <section class="section">
@@ -271,6 +295,14 @@ td small {
 
 .section-heading .eyebrow {
   margin-bottom: 4px;
+}
+
+.history-toggle {
+  padding: 7px 10px;
+  border: 1px solid #cbd2dc;
+  border-radius: 7px;
+  color: #273244;
+  background: #fff;
 }
 
 .metrics-grid {
