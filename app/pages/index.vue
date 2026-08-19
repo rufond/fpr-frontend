@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import { useFundRealtime } from "~/composables/useFundRealtime"
 import { fundInfo } from '~/data/fund'
 import { formatDate, formatNumber, formatPercent } from '~/utils/format'
 
-const { state, pending, error, refresh } = useFundState()
+const { state, error, refresh } = useFundState()
 
-onMounted(() => {
-  void refresh()
-})
+useFundRealtime()
 
 const snapshot = computed(() => state.value?.official_snapshot)
 const market = computed(() => state.value?.market)
@@ -42,7 +41,7 @@ const market = computed(() => state.value?.market)
       <button type="button" @click="refresh">Повторить</button>
     </div>
 
-    <div v-else-if="pending && !state" class="notice">
+    <div v-else-if="!state" class="notice">
       Загружаем актуальные данные фонда…
     </div>
 
@@ -119,33 +118,33 @@ const market = computed(() => state.value?.market)
         <div class="table-wrap">
           <table>
             <thead>
-              <tr>
-                <th>Актив</th>
-                <th>Тип</th>
-                <th>Тикер / ISIN</th>
-                <th class="number-cell">Количество</th>
-                <th class="number-cell">Доля активов</th>
-              </tr>
+            <tr>
+              <th>Актив</th>
+              <th>Тип</th>
+              <th>Тикер / ISIN</th>
+              <th class="number-cell">Количество</th>
+              <th class="number-cell">Доля активов</th>
+            </tr>
             </thead>
             <tbody>
-              <tr v-for="asset in snapshot.assets" :key="asset.row_no">
-                <td>
-                  <strong>{{ asset.instrument?.name || asset.source_name || asset.source_type }}</strong>
-                  <small v-if="asset.instrument?.issuer && asset.instrument.issuer !== asset.instrument.name">
-                    {{ asset.instrument.issuer }}
-                  </small>
-                </td>
-                <td>{{ asset.source_type }}</td>
-                <td class="code-cell">
-                  {{ asset.instrument?.ticker || asset.instrument?.isin || '—' }}
-                </td>
-                <td class="number-cell">
-                  {{ formatNumber(asset.quantity, 4) }}
-                </td>
-                <td class="number-cell">
-                  <template v-if="asset.asset_share_upper_bound">&lt; </template>{{ formatPercent(asset.asset_share_percent, 2) }}
-                </td>
-              </tr>
+            <tr v-for="asset in snapshot.assets" :key="asset.row_no">
+              <td>
+                <strong>{{ asset.instrument?.name || asset.source_name || asset.source_type }}</strong>
+                <small v-if="asset.instrument?.issuer && asset.instrument.issuer !== asset.instrument.name">
+                  {{ asset.instrument.issuer }}
+                </small>
+              </td>
+              <td>{{ asset.source_type }}</td>
+              <td class="code-cell">
+                {{ asset.instrument?.ticker || asset.instrument?.isin || '—' }}
+              </td>
+              <td class="number-cell">
+                {{ formatNumber(asset.quantity, 4) }}
+              </td>
+              <td class="number-cell">
+                <template v-if="asset.asset_share_upper_bound">&lt; </template>{{ formatPercent(asset.asset_share_percent, 2) }}
+              </td>
+            </tr>
             </tbody>
           </table>
         </div>

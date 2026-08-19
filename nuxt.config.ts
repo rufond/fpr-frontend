@@ -10,6 +10,12 @@ export default defineNuxtConfig({
     enabled: false,
   },
 
+  runtimeConfig: {
+    public: {
+      realtimeUrl: process.env.FPR_DEV_REALTIME_URL || '',
+    },
+  },
+
   css: ['~/assets/css/base.css'],
 
   app: {
@@ -44,7 +50,6 @@ export default defineNuxtConfig({
         '/api': {
           target: backendTarget,
           changeOrigin: true,
-          ws: true,
         },
       },
     },
