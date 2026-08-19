@@ -1,0 +1,9 @@
+.git
+.github
+.nuxt
+.output
+node_modules
+package-lock.json
+.env
+.DS_Store
+npm-debug.log*

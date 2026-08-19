@@ -1,0 +1,32 @@
+{
+  "name": "fpr-frontend",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "check:size": "node scripts/check-build-size.mjs",
+    "check": "npm run generate && npm run check:size"
+  },
+  "dependencies": {
+    "nuxt": "^4.5.2",
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3"
+  },
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=10"
+  },
+  "description": "Frontend неофициального сайта о ЗПИФ «Фонд первичных размещений».",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rufond/fpr-frontend.git"
+  }
+}
