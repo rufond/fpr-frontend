@@ -2,13 +2,14 @@ import { gzipSync } from 'node:zlib'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 
-const outputDir = '.output/public/_nuxt'
+const publicDir = '.output/public'
+const outputDir = join(publicDir, '_nuxt')
 
 const limits = {
   jsFileGzip: 160 * 1024,
   cssFileGzip: 32 * 1024,
-  allJsGzip: 512 * 1024,
-  allCssGzip: 96 * 1024,
+  publicIndexJsGzip: 220 * 1024,
+  publicIndexCssGzip: 48 * 1024,
 }
 
 async function filesIn(directory) {
@@ -27,8 +28,25 @@ async function filesIn(directory) {
   return files
 }
 
+function publicIndexAssets(html) {
+  const paths = new Set()
+
+  for (const match of html.matchAll(/(?:src|href)=["']([^"']+)["']/g)) {
+    const value = match[1]
+    if (!value?.startsWith('/_nuxt/')) {
+      continue
+    }
+
+    if (value.endsWith('.js') || value.endsWith('.css')) {
+      paths.add(join(publicDir, value.slice(1)))
+    }
+  }
+
+  return paths
+}
+
 const files = (await filesIn(outputDir))
-  .filter(path => path.endsWith('.js') || path.endsWith('.css'))
+    .filter(path => path.endsWith('.js') || path.endsWith('.css'))
 
 const result = []
 
@@ -36,6 +54,7 @@ for (const path of files) {
   const content = await readFile(path)
   result.push({
     path: relative(outputDir, path),
+    absolutePath: path,
     type: path.endsWith('.js') ? 'js' : 'css',
     raw: (await stat(path)).size,
     gzip: gzipSync(content, { level: 9 }).length,
@@ -44,17 +63,24 @@ for (const path of files) {
 
 result.sort((a, b) => b.gzip - a.gzip)
 
-const totals = {
-  js: result.filter(item => item.type === 'js').reduce((sum, item) => sum + item.gzip, 0),
-  css: result.filter(item => item.type === 'css').reduce((sum, item) => sum + item.gzip, 0),
+const indexHTML = await readFile(join(publicDir, 'index.html'), 'utf8')
+const indexAssets = publicIndexAssets(indexHTML)
+
+const indexTotals = {
+  js: result
+      .filter(item => item.type === 'js' && indexAssets.has(item.absolutePath))
+      .reduce((sum, item) => sum + item.gzip, 0),
+  css: result
+      .filter(item => item.type === 'css' && indexAssets.has(item.absolutePath))
+      .reduce((sum, item) => sum + item.gzip, 0),
 }
 
 for (const item of result) {
   console.log(`${item.type.toUpperCase().padEnd(3)} ${String(Math.ceil(item.gzip / 1024)).padStart(4)} KiB gzip  ${item.path}`)
 }
 
-console.log(`Total JS:  ${Math.ceil(totals.js / 1024)} KiB gzip`)
-console.log(`Total CSS: ${Math.ceil(totals.css / 1024)} KiB gzip`)
+console.log(`Public index JS:  ${Math.ceil(indexTotals.js / 1024)} KiB gzip`)
+console.log(`Public index CSS: ${Math.ceil(indexTotals.css / 1024)} KiB gzip`)
 
 const violations = []
 
@@ -67,11 +93,11 @@ for (const item of result) {
   }
 }
 
-if (totals.js > limits.allJsGzip) {
-  violations.push(`all JS exceeds ${limits.allJsGzip / 1024} KiB gzip`)
+if (indexTotals.js > limits.publicIndexJsGzip) {
+  violations.push(`public index JS exceeds ${limits.publicIndexJsGzip / 1024} KiB gzip`)
 }
-if (totals.css > limits.allCssGzip) {
-  violations.push(`all CSS exceeds ${limits.allCssGzip / 1024} KiB gzip`)
+if (indexTotals.css > limits.publicIndexCssGzip) {
+  violations.push(`public index CSS exceeds ${limits.publicIndexCssGzip / 1024} KiB gzip`)
 }
 
 if (violations.length > 0) {
