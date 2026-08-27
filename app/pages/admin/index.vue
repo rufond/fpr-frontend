@@ -241,6 +241,8 @@ function responseStatus(reason: unknown) {
         </template>
       </section>
 
+      <AdminPriceSources @changed="refresh(true)" />
+
       <section class="scheduler">
         <div class="section-heading">
           <div>
@@ -342,9 +344,9 @@ function responseStatus(reason: unknown) {
 
 <style scoped>
 .admin-page {
-  width: min(960px, calc(100% - 32px));
+  width: min(1560px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 48px 0 72px;
+  padding: 28px 0 56px;
 }
 
 h1,
@@ -378,7 +380,7 @@ h2 {
   margin: 12vh auto 0;
   padding: 24px;
   border: 1px solid #e0e4ea;
-  border-radius: 14px;
+  border-radius: 4px;
   background: #fff;
 }
 
@@ -411,14 +413,14 @@ input {
   width: 100%;
   padding: 10px 11px;
   border: 1px solid #cbd2dc;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #fff;
 }
 
 button {
   padding: 8px 11px;
   border: 1px solid #cbd2dc;
-  border-radius: 8px;
+  border-radius: 4px;
   color: #273244;
   background: #fff;
   cursor: pointer;
@@ -469,15 +471,15 @@ button:disabled {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(140px, 180px));
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .summary-grid article {
-  padding: 16px;
+  padding: 11px 12px;
   border: 1px solid #e0e4ea;
-  border-radius: 11px;
+  border-radius: 4px;
   background: #fff;
 }
 
@@ -490,7 +492,7 @@ button:disabled {
 .summary-grid strong {
   display: block;
   margin-top: 5px;
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -501,7 +503,7 @@ button:disabled {
   justify-content: space-between;
   padding: 14px 16px;
   border: 1px solid #dce1e8;
-  border-radius: 10px;
+  border-radius: 4px;
   background: #fff;
 }
 
@@ -524,7 +526,7 @@ button:disabled {
   margin-bottom: 0;
   padding: 32px 16px;
   border: 1px solid #dfe8df;
-  border-radius: 11px;
+  border-radius: 4px;
   color: #4d6a4d;
   background: #fbfdfb;
   text-align: center;
@@ -534,7 +536,7 @@ button:disabled {
   padding: 15px 16px;
   border: 1px solid #e0e4ea;
   border-left-width: 4px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: #fff;
 }
 
@@ -598,7 +600,7 @@ pre {
   margin: 8px 0 0;
   padding: 10px;
   overflow: auto;
-  border-radius: 7px;
+  border-radius: 4px;
   background: #f7f8fa;
   font-size: .72rem;
 }
@@ -618,7 +620,7 @@ pre {
 .scheduler-table-wrap {
   overflow-x: auto;
   border: 1px solid #e0e4ea;
-  border-radius: 10px;
+  border-radius: 4px;
   background: #fff;
 }
 
@@ -687,7 +689,7 @@ pre {
   padding: 13px 15px;
   border: 1px solid #d7e4d8;
   border-left-width: 4px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: #fbfdfb;
 }
 
@@ -721,7 +723,7 @@ pre {
 
 @media (max-width: 620px) {
   .admin-page {
-    width: min(100% - 24px, 960px);
+    width: calc(100% - 24px);
     padding-top: 28px;
   }
 

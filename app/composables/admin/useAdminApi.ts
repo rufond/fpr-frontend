@@ -2,7 +2,7 @@ import {useAdminAuth} from "~/composables/admin/useAdminAuth.ts";
 
 type AdminRequestOptions = {
     method?: 'GET' | 'POST'
-    body?: Record<string, unknown>
+    body?: object
 }
 
 export function useAdminApi() {
@@ -16,6 +16,7 @@ export function useAdminApi() {
         try {
             return await $fetch<T>(url, {
                 ...options,
+                body: options.body as Record<string, unknown> | undefined,
                 headers: {
                     Authorization: `Bearer ${token.value}`,
                 },
