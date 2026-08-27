@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import {useAdminAuth} from "~/composables/admin/useAdminAuth.ts";
 import {useAdminDiagnostics} from "~/composables/admin/useAdminDiagnostics.ts";
+import {useAdminScheduler} from "~/composables/admin/useAdminScheduler.ts";
 
 const { token, login, logout } = useAdminAuth()
 const { diagnostics, pending, error: diagnosticsError, refresh } = useAdminDiagnostics()
+const {
+  jobs,
+  pending: schedulerPending,
+  error: schedulerError,
+  runPendingKey,
+  runError,
+  runResult,
+  refresh: refreshScheduler,
+  run: runSchedulerJob,
+} = useAdminScheduler()
 
 const loginValue = ref('')
 const passwordValue = ref('')
@@ -14,7 +25,10 @@ watch(
     token,
     value => {
       if (value) {
-        void refresh()
+        void Promise.all([
+          refresh(),
+          refreshScheduler(),
+        ])
       }
     },
     {
@@ -43,6 +57,39 @@ async function submitLogin() {
 async function submitLogout() {
   await logout()
   diagnostics.value = null
+}
+
+const schedulerRunningCount = computed(() => jobs.value.filter(job => job.running).length)
+
+const schedulerDateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
+  dateStyle: 'short',
+  timeStyle: 'medium',
+})
+
+function formatSchedulerTime(value: string | null) {
+  if (!value) {
+    return '—'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return schedulerDateTimeFormatter.format(date)
+}
+
+function schedulerRunStatus(value: string) {
+  switch (value) {
+    case 'completed':
+      return 'Завершено'
+    case 'noop':
+      return 'Без изменений'
+    case 'failed':
+      return 'Ошибка'
+    default:
+      return value
+  }
 }
 
 function loginErrorMessage(reason: unknown) {
@@ -114,7 +161,7 @@ function responseStatus(reason: unknown) {
       <header class="admin-header">
         <div>
           <p class="eyebrow">FPR Admin</p>
-          <h1>Диагностика</h1>
+          <h1>Администрирование</h1>
         </div>
 
         <div class="header-actions">
@@ -140,7 +187,7 @@ function responseStatus(reason: unknown) {
 
       <div v-if="diagnosticsError" class="notice notice-error">
         <span>{{ diagnosticsError }}</span>
-        <button type="button" :disabled="pending" @click="refresh">Повторить</button>
+        <button type="button" :disabled="pending" @click="refresh()">Повторить</button>
       </div>
 
       <div v-else-if="pending && !diagnostics" class="notice">
@@ -150,7 +197,7 @@ function responseStatus(reason: unknown) {
       <section v-else-if="diagnostics" class="issues">
         <div class="section-heading">
           <h2>Активные проблемы</h2>
-          <button type="button" :disabled="pending" @click="refresh">
+          <button type="button" :disabled="pending" @click="refresh()">
             {{ pending ? 'Обновляем…' : 'Обновить' }}
           </button>
         </div>
@@ -192,6 +239,102 @@ function responseStatus(reason: unknown) {
             </details>
           </article>
         </template>
+      </section>
+
+      <section class="scheduler">
+        <div class="section-heading">
+          <div>
+            <h2>Scheduler</h2>
+            <p class="section-description">
+              {{ jobs.length }} задач · выполняется сейчас: {{ schedulerRunningCount }}
+            </p>
+          </div>
+
+          <button type="button" :disabled="schedulerPending" @click="refreshScheduler()">
+            {{ schedulerPending ? 'Обновляем…' : 'Обновить' }}
+          </button>
+        </div>
+
+        <div v-if="schedulerError" class="notice notice-error">
+          <span>{{ schedulerError }}</span>
+          <button type="button" :disabled="schedulerPending" @click="refreshScheduler()">Повторить</button>
+        </div>
+
+        <div v-else-if="schedulerPending && jobs.length === 0" class="notice">
+          Загружаем scheduler…
+        </div>
+
+        <div v-if="runError" class="notice notice-error">
+          {{ runError }}
+        </div>
+
+        <div
+            v-else-if="runResult"
+            class="run-result"
+            :class="`run-result-${runResult.status}`"
+        >
+          <div class="run-result-heading">
+            <strong>{{ schedulerRunStatus(runResult.status) }}</strong>
+            <span>Run #{{ runResult.run_id }} · {{ runResult.key }}</span>
+          </div>
+
+          <p v-if="runResult.error">{{ runResult.error }}</p>
+
+          <details v-if="runResult.summary && Object.keys(runResult.summary).length">
+            <summary>Результат</summary>
+            <pre>{{ JSON.stringify(runResult.summary, null, 2) }}</pre>
+          </details>
+        </div>
+
+        <div v-if="jobs.length" class="scheduler-table-wrap">
+          <table class="scheduler-table">
+            <thead>
+            <tr>
+              <th>Задача</th>
+              <th>Cron (UTC)</th>
+              <th>Состояние</th>
+              <th>Предыдущий запуск</th>
+              <th>Следующий запуск</th>
+              <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="job in jobs" :key="job.key">
+              <td>
+                <strong>{{ job.name }}</strong>
+                <span>{{ job.key }}</span>
+              </td>
+              <td><code>{{ job.spec }}</code></td>
+              <td>
+                  <span class="scheduler-status" :class="{ 'scheduler-status-running': job.running }">
+                    {{ job.running ? 'Выполняется' : 'Ожидает' }}
+                  </span>
+              </td>
+              <td>{{ formatSchedulerTime(job.prev) }}</td>
+              <td>{{ formatSchedulerTime(job.next) }}</td>
+              <td class="scheduler-action">
+                <button
+                    type="button"
+                    :disabled="job.running || runPendingKey !== null"
+                    @click="runSchedulerJob(job)"
+                >
+                  {{
+                    job.running
+                        ? 'Выполняется'
+                        : runPendingKey === job.key
+                            ? 'Запуск…'
+                            : 'Запустить'
+                  }}
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p v-else-if="!schedulerPending && !schedulerError" class="empty-state">
+          Scheduler jobs не зарегистрированы.
+        </p>
       </section>
     </template>
   </main>
@@ -458,6 +601,122 @@ pre {
   border-radius: 7px;
   background: #f7f8fa;
   font-size: .72rem;
+}
+
+.section-description {
+  margin: 4px 0 0;
+  color: #70798a;
+  font-size: .78rem;
+}
+
+.scheduler {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.scheduler-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e0e4ea;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.scheduler-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.scheduler-table th,
+.scheduler-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #edf0f3;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.scheduler-table th {
+  color: #70798a;
+  background: #fafbfc;
+  font-size: .72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.scheduler-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.scheduler-table td {
+  font-size: .78rem;
+}
+
+.scheduler-table td:first-child strong,
+.scheduler-table td:first-child span {
+  display: block;
+}
+
+.scheduler-table td:first-child span {
+  margin-top: 3px;
+  color: #7a8392;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: .7rem;
+}
+
+.scheduler-table code {
+  white-space: nowrap;
+}
+
+.scheduler-status {
+  display: inline-block;
+  color: #667085;
+  white-space: nowrap;
+}
+
+.scheduler-status-running {
+  color: #8b5e10;
+  font-weight: 600;
+}
+
+.scheduler-action {
+  text-align: right;
+}
+
+.run-result {
+  padding: 13px 15px;
+  border: 1px solid #d7e4d8;
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: #fbfdfb;
+}
+
+.run-result-noop {
+  border-color: #e4d9bd;
+  background: #fffdf8;
+}
+
+.run-result-failed {
+  border-color: #e2b9b9;
+  background: #fffafa;
+}
+
+.run-result-heading {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.run-result-heading span {
+  color: #70798a;
+  font-size: .72rem;
+}
+
+.run-result p {
+  margin: 8px 0 0;
+  color: #8d2d2d;
+  font-size: .78rem;
 }
 
 @media (max-width: 620px) {
