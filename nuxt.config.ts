@@ -11,6 +11,13 @@ export default defineNuxtConfig({
     enabled: false,
   },
 
+  nitro: {
+    prerender: {
+      // The prerendered root already writes index.html.
+      ignore: ['/index.html'],
+    },
+  },
+
   runtimeConfig: {
     public: {
       realtimeUrl: process.env.FPR_DEV_REALTIME_URL || '',

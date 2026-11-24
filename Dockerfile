@@ -7,7 +7,7 @@ RUN npm install --no-package-lock
 
 COPY . .
 
-RUN npm run generate
+RUN npm run check
 
 FROM nginx:alpine
 

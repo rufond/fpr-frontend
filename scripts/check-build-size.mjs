@@ -83,6 +83,11 @@ console.log(`Public index JS:  ${Math.ceil(indexTotals.js / 1024)} KiB gzip`)
 console.log(`Public index CSS: ${Math.ceil(indexTotals.css / 1024)} KiB gzip`)
 
 const violations = []
+const htmlEnd = indexHTML.indexOf('</html>')
+
+if (htmlEnd === -1 || indexHTML.slice(htmlEnd + '</html>'.length).trim()) {
+  violations.push('index.html must end at its first closing </html> tag')
+}
 
 for (const item of result) {
   if (item.type === 'js' && item.gzip > limits.jsFileGzip) {
@@ -101,7 +106,7 @@ if (indexTotals.css > limits.publicIndexCssGzip) {
 }
 
 if (violations.length > 0) {
-  console.error('\nBundle size budget failed:')
+  console.error('\nStatic build validation failed:')
   for (const violation of violations) {
     console.error(`- ${violation}`)
   }
