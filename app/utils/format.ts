@@ -46,3 +46,33 @@ export function formatDate(value: string | null | undefined) {
     timeZone: 'UTC',
   }).format(date)
 }
+
+const currencySymbols: Record<string, string> = { USD: '$', RUB: '₽', KZT: '₸' }
+const moscowDateTime = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow',
+})
+
+export function formatMoney(value: string | null | undefined, currency: string | null | undefined, digits = 2) {
+  const amount = formatNumber(value, digits)
+  if (amount === '—' || !currency) return amount
+  return `${amount}\u00a0${currencySymbols[currency] ?? currency}`
+}
+
+export function formatMarketTime(value: string | number | null | undefined) {
+  if (value == null) return '—'
+  const date = new Date(value)
+  return Number.isFinite(date.getTime()) ? `${moscowDateTime.format(date)} МСК` : '—'
+}
+
+export function formatSignedMoney(value: string, currency: string, digits = 2) {
+  return (Number(value) > 0 ? '+' : '') + formatMoney(value, currency, digits)
+}
+
+export function formatSignedPercent(value: string, digits = 2) {
+  return (Number(value) > 0 ? '+' : '') + formatPercent(value, digits)
+}
+
+export function valueTone(value: string) {
+  const number = Number(value)
+  return number > 0 ? 'positive' : number < 0 ? 'negative' : ''
+}

@@ -12,12 +12,12 @@
     "check": "npm run generate && npm run check:size"
   },
   "dependencies": {
-    "nuxt": "^4.5.2",
-    "vue": "^3.5.41",
-    "vue-router": "^5.2.0"
+    "nuxt": "^4.7.0",
+    "vue": "^3.5.46",
+    "vue-router": "^5.5.1"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3"
+    "@types/node": "^24.19.2"
   },
   "engines": {
     "node": ">=24 <25",
@@ -28,5 +28,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/rufond/fpr-frontend.git"
+  },
+  "overrides": {
+    "readdir-glob": {
+      "minimatch": "^11.0.9"
+    }
   }
 }

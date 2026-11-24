@@ -7,6 +7,7 @@ export type RealtimeScope =
     | 'fx_rates'
     | 'instrument_prices'
     | 'live_valuation'
+    | 'portfolio'
     | 'scheduler'
 
 export type RealtimeConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected'

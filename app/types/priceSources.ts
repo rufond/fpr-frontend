@@ -1,4 +1,4 @@
-export type PriceSourceProvider = 'moex' | 'yahoo' | 'kase'
+export type PriceSourceProvider = 'moex' | 'yahoo' | 'kase' | 'nasdaq'
 
 export interface AdminPriceSource {
     id: number

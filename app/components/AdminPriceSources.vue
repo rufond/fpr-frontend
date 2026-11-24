@@ -46,12 +46,12 @@ async function saveSource(input: SetPriceSourceRequest) {
 </script>
 
 <template>
-  <section class="price-sources">
+  <section id="price-sources" class="price-sources" aria-labelledby="price-sources-title">
     <div class="section-heading">
       <div>
-        <h2>Источники цен</h2>
+        <h2 id="price-sources-title">Источники котировок</h2>
         <p class="section-description">
-          {{ items.length }} инструментов · настроено: {{ mappedCount }} · включено: {{ enabledCount }}
+          Всего {{ items.length }} · с привязкой {{ mappedCount }} · с активным источником {{ enabledCount }}
         </p>
       </div>
 
@@ -84,12 +84,12 @@ async function saveSource(input: SetPriceSourceRequest) {
           <input
               v-model="search"
               type="search"
-              placeholder="Название, тикер, ISIN, provider или symbol"
+              placeholder="Название, тикер, ISIN или поставщик"
           >
         </label>
 
         <p class="source-note">
-          Включение source отключает другой активный source инструмента.
+          У каждого инструмента может быть один активный источник.
         </p>
       </div>
 
@@ -101,9 +101,9 @@ async function saveSource(input: SetPriceSourceRequest) {
         <div class="items-head" aria-hidden="true">
           <span>Инструмент</span>
           <span>Тикер / ISIN</span>
-          <span>Сохранённые sources</span>
-          <span>Provider</span>
-          <span>Symbol</span>
+          <span>Сохранённые привязки</span>
+          <span>Поставщик</span>
+          <span>Тикер у поставщика</span>
           <span>Активен</span>
           <span></span>
         </div>
@@ -159,7 +159,7 @@ button {
   min-height: 32px;
   padding: 6px 9px;
   border: 1px solid #cbd2dc;
-  border-radius: 4px;
+  border-radius: 0;
   color: #263244;
   background: #fff;
   font-size: .78rem;
@@ -179,7 +179,7 @@ button:disabled {
   margin-top: 12px;
   padding: 9px 11px;
   border: 1px solid #dfe4eb;
-  border-radius: 4px;
+  border-radius: 0;
   color: #4f596a;
   background: #fff;
   font-size: .78rem;
@@ -227,7 +227,7 @@ button:disabled {
   min-height: 32px;
   padding: 6px 8px;
   border: 1px solid #cbd2dc;
-  border-radius: 4px;
+  border-radius: 0;
   background: #fff;
 }
 

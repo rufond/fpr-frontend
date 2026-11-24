@@ -16,7 +16,7 @@ export function useAdminApi() {
         try {
             return await $fetch<T>(url, {
                 ...options,
-                body: options.body as Record<string, unknown> | undefined,
+                body: options.body as Blob | Record<string, unknown> | undefined,
                 headers: {
                     Authorization: `Bearer ${token.value}`,
                 },

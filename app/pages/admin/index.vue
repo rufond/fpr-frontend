@@ -101,7 +101,7 @@ function loginErrorMessage(reason: unknown) {
     return 'Заполните логин и пароль.'
   }
 
-  return reason instanceof Error ? reason.message : 'Не удалось выполнить вход.'
+  return 'Не удалось войти. Попробуйте ещё раз.'
 }
 
 function responseStatus(reason: unknown) {
@@ -123,9 +123,8 @@ function responseStatus(reason: unknown) {
 <template>
   <main class="admin-page">
     <section v-if="!token" class="login-card">
-      <p class="eyebrow">FPR Admin</p>
-      <h1>Вход</h1>
-      <p class="login-description">Управление данными и диагностика backend.</p>
+      <a class="eyebrow back-link" href="/">← FPR</a>
+      <h1>Вход в админку</h1>
 
       <form @submit.prevent="submitLogin">
         <label>
@@ -149,7 +148,7 @@ function responseStatus(reason: unknown) {
           >
         </label>
 
-        <p v-if="loginError" class="form-error">{{ loginError }}</p>
+        <p v-if="loginError" class="form-error" role="alert">{{ loginError }}</p>
 
         <button type="submit" :disabled="loginPending">
           {{ loginPending ? 'Входим…' : 'Войти' }}
@@ -160,7 +159,7 @@ function responseStatus(reason: unknown) {
     <template v-else>
       <header class="admin-header">
         <div>
-          <p class="eyebrow">FPR Admin</p>
+          <p class="eyebrow">FPR</p>
           <h1>Администрирование</h1>
         </div>
 
@@ -170,9 +169,20 @@ function responseStatus(reason: unknown) {
         </div>
       </header>
 
-      <section class="summary-grid">
+      <nav class="admin-nav" aria-label="Разделы админки">
+        <a href="#price-sources">Источники котировок</a>
+        <a href="#portfolio-import">Импорт справок</a>
+        <a href="#diagnostics">Диагностика</a>
+        <a href="#scheduler">Сбор данных</a>
+      </nav>
+
+      <AdminPriceSources @changed="refresh(true)" />
+      <AdminPortfolioImport />
+
+      <h2 id="diagnostics" class="diagnostics-title">Диагностика</h2>
+      <section class="summary-grid" aria-labelledby="diagnostics">
         <article>
-          <span>Всего</span>
+          <span>Всего проблем</span>
           <strong>{{ diagnostics?.total ?? '—' }}</strong>
         </article>
         <article>
@@ -228,7 +238,7 @@ function responseStatus(reason: unknown) {
                 <dd>{{ issue.type }}</dd>
               </div>
               <div v-if="issue.instrument_id !== null">
-                <dt>Instrument ID</dt>
+                <dt>ID инструмента</dt>
                 <dd>{{ issue.instrument_id }}</dd>
               </div>
             </dl>
@@ -241,14 +251,12 @@ function responseStatus(reason: unknown) {
         </template>
       </section>
 
-      <AdminPriceSources @changed="refresh(true)" />
-
-      <section class="scheduler">
+      <section id="scheduler" class="scheduler" aria-labelledby="scheduler-title">
         <div class="section-heading">
           <div>
-            <h2>Scheduler</h2>
+            <h2 id="scheduler-title">Сбор данных</h2>
             <p class="section-description">
-              {{ jobs.length }} задач · выполняется сейчас: {{ schedulerRunningCount }}
+              Выполняется {{ schedulerRunningCount }} из {{ jobs.length }}
             </p>
           </div>
 
@@ -263,7 +271,7 @@ function responseStatus(reason: unknown) {
         </div>
 
         <div v-else-if="schedulerPending && jobs.length === 0" class="notice">
-          Загружаем scheduler…
+          Загружаем задачи…
         </div>
 
         <div v-if="runError" class="notice notice-error">
@@ -277,7 +285,7 @@ function responseStatus(reason: unknown) {
         >
           <div class="run-result-heading">
             <strong>{{ schedulerRunStatus(runResult.status) }}</strong>
-            <span>Run #{{ runResult.run_id }} · {{ runResult.key }}</span>
+            <span>Запуск №{{ runResult.run_id }} · {{ runResult.key }}</span>
           </div>
 
           <p v-if="runResult.error">{{ runResult.error }}</p>
@@ -335,7 +343,7 @@ function responseStatus(reason: unknown) {
         </div>
 
         <p v-else-if="!schedulerPending && !schedulerError" class="empty-state">
-          Scheduler jobs не зарегистрированы.
+          Запланированных задач пока нет.
         </p>
       </section>
     </template>
@@ -344,7 +352,7 @@ function responseStatus(reason: unknown) {
 
 <style scoped>
 .admin-page {
-  width: min(1560px, calc(100% - 32px));
+  width: min(1240px, calc(100% - 32px));
   margin: 0 auto;
   padding: 28px 0 56px;
 }
@@ -368,26 +376,31 @@ h2 {
 
 .eyebrow {
   margin-bottom: 7px;
-  color: #697386;
+  color: var(--accent);
   font-size: .72rem;
   font-weight: 700;
   letter-spacing: .09em;
   text-transform: uppercase;
 }
 
+.back-link {
+  display: inline-block;
+  text-underline-offset: 3px;
+}
+
 .login-card {
   width: min(100%, 380px);
-  margin: 12vh auto 0;
-  padding: 24px;
-  border: 1px solid #e0e4ea;
-  border-radius: 4px;
+  margin: 9vh auto 0;
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--accent);
+  border-radius: 0;
+  box-shadow: 0 8px 24px #173e4d12;
   background: #fff;
 }
 
-.login-description {
-  margin-bottom: 24px;
-  color: #697386;
-  font-size: .88rem;
+.login-card h1 {
+  margin-bottom: 20px;
 }
 
 form,
@@ -412,15 +425,15 @@ label span {
 input {
   width: 100%;
   padding: 10px 11px;
-  border: 1px solid #cbd2dc;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: 0;
   background: #fff;
 }
 
 button {
   padding: 8px 11px;
-  border: 1px solid #cbd2dc;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: 0;
   color: #273244;
   background: #fff;
   cursor: pointer;
@@ -428,9 +441,9 @@ button {
 
 form button {
   margin-top: 3px;
-  border-color: #273244;
+  border-color: var(--accent);
   color: #fff;
-  background: #273244;
+  background: var(--accent);
 }
 
 button:disabled {
@@ -456,6 +469,8 @@ button:disabled {
 .admin-header {
   gap: 24px;
   margin-bottom: 24px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .header-actions {
@@ -469,23 +484,35 @@ button:disabled {
   text-decoration: none;
 }
 
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: .84rem;
+  text-underline-offset: 3px;
+}
+
+.diagnostics-title {
+  margin: 28px 0 8px;
+}
+
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 180px));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 }
 
 .summary-grid article {
   padding: 11px 12px;
-  border: 1px solid #e0e4ea;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: 0;
   background: #fff;
 }
 
 .summary-grid span {
   display: block;
-  color: #70798a;
+  color: var(--muted);
   font-size: .78rem;
 }
 
@@ -503,7 +530,7 @@ button:disabled {
   justify-content: space-between;
   padding: 14px 16px;
   border: 1px solid #dce1e8;
-  border-radius: 4px;
+  border-radius: 0;
   background: #fff;
 }
 
@@ -526,7 +553,7 @@ button:disabled {
   margin-bottom: 0;
   padding: 32px 16px;
   border: 1px solid #dfe8df;
-  border-radius: 4px;
+  border-radius: 0;
   color: #4d6a4d;
   background: #fbfdfb;
   text-align: center;
@@ -534,9 +561,9 @@ button:disabled {
 
 .issue {
   padding: 15px 16px;
-  border: 1px solid #e0e4ea;
+  border: 1px solid var(--border);
   border-left-width: 4px;
-  border-radius: 4px;
+  border-radius: 0;
   background: #fff;
 }
 
@@ -554,7 +581,7 @@ button:disabled {
 }
 
 .issue-heading span {
-  color: #70798a;
+  color: var(--muted);
   font-size: .72rem;
   white-space: nowrap;
 }
@@ -600,14 +627,14 @@ pre {
   margin: 8px 0 0;
   padding: 10px;
   overflow: auto;
-  border-radius: 4px;
+  border-radius: 0;
   background: #f7f8fa;
   font-size: .72rem;
 }
 
 .section-description {
   margin: 4px 0 0;
-  color: #70798a;
+  color: var(--muted);
   font-size: .78rem;
 }
 
@@ -619,8 +646,8 @@ pre {
 
 .scheduler-table-wrap {
   overflow-x: auto;
-  border: 1px solid #e0e4ea;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: 0;
   background: #fff;
 }
 
@@ -639,7 +666,7 @@ pre {
 }
 
 .scheduler-table th {
-  color: #70798a;
+  color: var(--muted);
   background: #fafbfc;
   font-size: .72rem;
   font-weight: 600;
@@ -689,7 +716,7 @@ pre {
   padding: 13px 15px;
   border: 1px solid #d7e4d8;
   border-left-width: 4px;
-  border-radius: 4px;
+  border-radius: 0;
   background: #fbfdfb;
 }
 
@@ -711,7 +738,7 @@ pre {
 }
 
 .run-result-heading span {
-  color: #70798a;
+  color: var(--muted);
   font-size: .72rem;
 }
 

@@ -4,6 +4,7 @@ const backendTarget = process.env.FPR_BACKEND_URL || 'http://127.0.0.1:8080'
 
 export default defineNuxtConfig({
   ssr: false,
+  buildDir: '.nuxt',
   compatibilityDate: '2026-08-18',
 
   devtools: {
@@ -24,6 +25,7 @@ export default defineNuxtConfig({
         lang: 'ru',
       },
       title: 'Фонд первичных размещений',
+      link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
       meta: [
         {
           name: 'description',

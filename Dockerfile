@@ -2,8 +2,8 @@ FROM node:24-alpine AS build
 
 WORKDIR /src
 
-COPY package.json .npmrc ./
-RUN npm install
+COPY package.json ./
+RUN npm install --no-package-lock
 
 COPY . .
 

@@ -18,6 +18,7 @@ const emit = defineEmits<{
 const provider = ref<PriceSourceProvider | ''>('')
 const providerSymbol = ref('')
 const enabled = ref(false)
+const equitySourceForBond = computed(() => props.item.asset_type === 'bond' && ['kase', 'nasdaq'].includes(provider.value))
 
 watch(
     () => props.item,
@@ -60,7 +61,7 @@ function selectProvider() {
   const source = props.item.sources.find(item => item.provider === provider.value)
 
   providerSymbol.value = source?.provider_symbol ?? ''
-  enabled.value = provider.value === 'kase' ? false : source?.enabled ?? false
+  enabled.value = !equitySourceForBond.value && (source?.enabled ?? false)
 }
 
 function submit() {
@@ -72,7 +73,7 @@ function submit() {
     instrument_id: props.item.instrument_id,
     provider: provider.value,
     provider_symbol: providerSymbol.value.trim(),
-    enabled: provider.value === 'kase' ? false : enabled.value,
+    enabled: !equitySourceForBond.value && enabled.value,
   })
 }
 
@@ -84,6 +85,8 @@ function providerName(value: PriceSourceProvider) {
       return 'Yahoo'
     case 'kase':
       return 'KASE'
+    case 'nasdaq':
+      return 'Nasdaq'
   }
 }
 
@@ -127,20 +130,22 @@ function assetTypeName(value: string) {
     </div>
 
     <label class="field provider-field">
-      <span>Provider</span>
-      <select v-model="provider" :disabled="disabled" required @change="selectProvider">
+      <span>Поставщик</span>
+      <select v-model="provider" aria-label="Поставщик котировок" :disabled="disabled" required @change="selectProvider">
         <option value="" disabled>—</option>
         <option value="moex">MOEX</option>
         <option value="yahoo">Yahoo</option>
         <option value="kase">KASE</option>
+        <option value="nasdaq">Nasdaq</option>
       </select>
     </label>
 
     <label class="field symbol-field">
-      <span>Symbol</span>
+      <span>Тикер у поставщика</span>
       <input
           v-model="providerSymbol"
           type="text"
+          aria-label="Тикер у поставщика"
           :disabled="disabled || !provider"
           autocomplete="off"
           spellcheck="false"
@@ -152,7 +157,8 @@ function assetTypeName(value: string) {
       <input
           v-model="enabled"
           type="checkbox"
-          :disabled="disabled || !provider || provider === 'kase'"
+          aria-label="Использовать этот источник"
+          :disabled="disabled || !provider || equitySourceForBond"
       >
       <span>{{ enabled ? 'Да' : 'Нет' }}</span>
     </label>
@@ -161,11 +167,11 @@ function assetTypeName(value: string) {
       {{ saving ? 'Сохраняем…' : 'Сохранить' }}
     </button>
 
-    <p v-if="provider === 'kase'" class="provider-note">
-      KASE adapter пока не реализован: mapping можно сохранить только выключенным.
+    <p v-if="equitySourceForBond" class="provider-note">
+      Источник поддерживает акции и расписки.
     </p>
     <p v-else-if="symbolChanged" class="provider-note provider-warning">
-      Смена symbol очистит сохранённые market data этого source.
+      При смене тикера сохранённая история котировок этого источника будет удалена.
     </p>
   </form>
 </template>
@@ -269,7 +275,7 @@ input[type='text'] {
   min-height: 30px;
   padding: 5px 7px;
   border: 1px solid #cbd2dc;
-  border-radius: 4px;
+  border-radius: 0;
   background: #fff;
   font-size: .72rem;
 }
@@ -288,7 +294,7 @@ button {
   min-height: 30px;
   padding: 5px 8px;
   border: 1px solid #cbd2dc;
-  border-radius: 4px;
+  border-radius: 0;
   color: #263244;
   background: #fff;
   font-size: .72rem;
