@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import InfoPopover from './InfoPopover.vue'
 import type { FundAsset, FundInstrument, MarketPrice, PriceReturn } from '~/types/fund'
-import type { ClosedPosition, EntryReference, Holding } from '~/types/portfolio'
+import type { ClosedPosition, EntryReference, Holding, PositionStart } from '~/types/portfolio'
 import { formatDate, formatMarketTime, formatMoney, formatNumber, formatPercent, formatSignedMoney, formatSignedPercent, valueTone } from '~/utils/format'
 
-const props = defineProps<{ assets: FundAsset[], prices: Record<number, MarketPrice>, valuations: Record<string, Holding>, asOf: string }>()
+const props = defineProps<{
+  assets: FundAsset[]
+  prices: Record<number, MarketPrice>
+  valuations: Record<string, Holding>
+  positionStarts: Record<string, PositionStart>
+  asOf: string
+}>()
 
 const tabs = [
   { key: 'all', label: 'Все' },
@@ -28,6 +35,7 @@ interface TableRow {
   closed?: ClosedPosition
   entry?: EntryReference
   profit?: PriceReturn
+  start?: PositionStart
 }
 
 const selected = ref<AssetGroup>('all')
@@ -60,6 +68,7 @@ const activeRows = computed<TableRow[]>(() => props.assets.map((asset) => {
     type: asset.source_type,
     group: instrument ? (instrument.asset_type === 'bond' ? 'bonds' : 'equities') : 'other',
     quantity: asset.quantity,
+    start: instrument ? props.positionStarts[instrument.isin] : undefined,
     asset, instrument, price, valuation, entry: valuation?.ipo, profit: price?.entry_return,
   }
 }))
@@ -74,6 +83,7 @@ const closedRows = computed<TableRow[]>(() => {
       ticker: item.ticker || valuation?.ipo?.ticker,
       type: item.kind === 'bond' ? 'Облигации' : item.kind === 'depositary_receipt' ? 'Депозитарные расписки' : 'Акции',
       group: item.kind === 'bond' ? 'bonds' : 'equities',
+      start: props.positionStarts[item.isin],
       quantity: item.quantity, valuation, closed: item, entry: item.entry ?? valuation?.ipo, profit: item.exit?.return,
     }
   })
@@ -177,14 +187,22 @@ function closeRange(item: ClosedPosition) {
             <tr v-for="row in rows" :key="row.key" :class="{ archived: row.closed }">
               <th scope="row" class="asset-name">
                 <div class="asset-line">
-                  <InfoPopover :aria-label="`${row.name}, сведения об активе`">
-                    <span class="asset-title" :class="{ 'ticker-first': row.ticker }">
-                      <strong v-if="row.ticker">{{ row.ticker }}</strong>
-                      <span>{{ row.name }}</span>
+                  <InfoPopover :aria-label="row.start ? `${row.name}, в составе к ${formatDate(row.start.first_seen)}` : `${row.name}, сведения об активе`">
+                    <span class="asset-caption">
+                      <span class="asset-title" :class="{ 'ticker-first': row.ticker }">
+                        <strong v-if="row.ticker">{{ row.ticker }}</strong>
+                        <span>{{ row.name }}</span>
+                      </span>
+                      <time v-if="row.start" class="asset-since" :datetime="row.start.first_seen">к {{ formatDate(row.start.first_seen) }}</time>
                     </span>
                     <template #detail>
                       <strong>{{ row.name }}</strong>
                       <span class="detail-line">{{ [row.ticker, row.isin, row.type].filter(Boolean).join(' · ') }}</span>
+                      <span v-if="row.start" class="detail-line">
+                        <template v-if="row.start.previous_absent">Позиция появилась после {{ formatDate(row.start.previous_absent) }}, не позднее </template>
+                        <template v-else>В составе к </template>
+                        <a :href="row.start.source_url" target="_blank" rel="noopener noreferrer">{{ formatDate(row.start.first_seen) }}</a>
+                      </span>
                       <template v-if="row.instrument?.bond_details">
                         <span v-if="row.instrument.bond_details.nominal_value" class="detail-line">Номинал {{ formatMoney(row.instrument.bond_details.nominal_value, row.instrument.bond_details.nominal_currency) }}</span>
                         <span v-if="row.instrument.bond_details.coupon_rate_percent" class="detail-line">Купон {{ formatPercent(row.instrument.bond_details.coupon_rate_percent, 4) }}</span>
@@ -236,20 +254,18 @@ function closeRange(item: ClosedPosition) {
                 <span v-else class="muted">—</span>
               </td>
               <td v-if="showReturns" class="numeric">
-                <InfoPopover v-if="row.profit" :aria-label="`Результат ${row.name}`">
+                <component v-if="row.profit" :is="row.profit.approximate || row.price?.entry_fx || row.price?.archived ? InfoPopover : 'span'">
                   <span :class="valueTone(row.profit.percent)" class="values-inline">
                     <strong v-if="row.profit.total">{{ row.profit.approximate ? '≈' : '' }}{{ formatSignedMoney(row.profit.total, 'USD', 0) }}</strong>
-                    <span>{{ row.profit.approximate ? '≈' : '' }}{{ formatSignedPercent(row.profit.percent, 1) }}</span>
+                    <sup v-if="row.profit.total" class="value-delta">{{ formatSignedPercent(row.profit.percent, 1) }}</sup>
+                    <span v-else>{{ row.profit.approximate ? '≈' : '' }}{{ formatSignedPercent(row.profit.percent, 1) }}</span>
                   </span>
                   <template #detail>
-                    <strong>{{ row.closed ? 'Оценка выхода к цене входа' : 'Изменение к цене входа' }}</strong>
                     <span v-if="row.profit.approximate" class="detail-line">Расчёт по приблизительной цене входа</span>
-                    <span class="detail-line">{{ formatSignedMoney(row.profit.unit_change, 'USD', 4) }} за бумагу</span>
-                    <span v-if="row.profit.total" class="detail-line">{{ formatSignedMoney(row.profit.total, 'USD') }} за позицию</span>
                     <span v-if="row.price?.entry_fx" class="detail-line">$1 = {{ formatMoney(row.price.entry_fx.rate, row.price.currency, 4) }} · {{ formatMarketTime(row.price.entry_fx.priced_at) }}</span>
-                    <span class="detail-line">{{ row.price?.archived ? 'Архивная котировка' : 'Без комиссий и дивидендов' }}</span>
+                    <span v-if="row.price?.archived" class="detail-line">Архивная котировка</span>
                   </template>
-                </InfoPopover>
+                </component>
                 <span v-else class="muted">—</span>
               </td>
               <td v-if="showReturns" class="numeric">
@@ -330,8 +346,10 @@ tbody tr:not(.archived) + tr.archived > * { border-top: 1px solid #ded5e8; }
 .asset-line { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
 .archived .asset-line { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: start; gap: 2px; }
 .asset-line > button { min-width: 0; overflow: hidden; }
-.asset-title { display: flex; align-items: baseline; gap: 6px; max-width: 100%; white-space: nowrap; }
+.asset-caption { display: flex; align-items: baseline; gap: 3px 7px; max-width: 100%; }
+.asset-title { display: flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; }
 .asset-title span { overflow: hidden; text-overflow: ellipsis; font-weight: 610; }
+.asset-since { flex-shrink: 0; color: var(--muted); font-size: .7rem; font-variant-numeric: tabular-nums; font-weight: 450; white-space: nowrap; }
 .ticker-first span { color: var(--muted); font-weight: 490; }
 .closed-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1px 4px; max-width: 100%; color: #685d76; font-size: .7rem; font-weight: 500; }
 .closed-label { color: #5b4b70; font-weight: 640; }
@@ -339,7 +357,6 @@ a.closed-label { text-underline-offset: 2px; }
 .numeric { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .values-inline { display: inline-flex; align-items: baseline; gap: 5px; }
 .values-inline strong { font-weight: 650; }
-.values-inline > span { font-size: .74rem; }
 .detail-line { display: block; margin-top: 4px; color: var(--muted); font-size: .74rem; }
 .estimated, .muted { color: var(--muted); }
 .positive { color: var(--positive); }
@@ -353,6 +370,7 @@ a.closed-label { text-underline-offset: 2px; }
   .search input { width: 100%; }
   tbody th:first-child, thead th:first-child { position: sticky; left: 0; min-width: 138px; padding-left: 9px; background: inherit; box-shadow: 1px 0 #eae5f0; }
   thead th:first-child { background: #f5f2f8; }
+  .asset-caption { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 1px; }
   .closed-status { font-size: .65rem; }
 }
 </style>

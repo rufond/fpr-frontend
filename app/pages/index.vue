@@ -125,7 +125,10 @@ const comparison = computed(() => {
         <FundAllocation :categories="snapshot.categories" />
       </div>
 
-      <FundAssets id="assets" :as-of="snapshot.as_of_date" :assets="snapshot.assets" :prices="market?.asset_prices ?? {}" :valuations="portfolio?.latest_valuations ?? {}" />
+      <FundAssets
+        id="assets" :as-of="snapshot.as_of_date" :assets="snapshot.assets" :prices="market?.asset_prices ?? {}"
+        :valuations="portfolio?.latest_valuations ?? {}" :position-starts="portfolio?.position_starts ?? {}"
+      />
     </template>
   </main>
 

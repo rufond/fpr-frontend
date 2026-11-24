@@ -8,7 +8,7 @@ export function usePortfolioIndex() {
 
 export function usePortfolioRealtime(refresh: () => void) {
   if (import.meta.client) {
-    const unsubscribe = useRealtime().subscribe(['portfolio'], refresh)
+    const unsubscribe = useRealtime().subscribe(['portfolio', 'fund_state'], refresh)
     onUnmounted(unsubscribe)
   }
 }

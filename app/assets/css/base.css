@@ -31,6 +31,14 @@ button:disabled { cursor: default; }
 
 a { color: var(--accent); }
 
+.value-delta {
+  position: relative;
+  inset-block-start: -.34em;
+  font-size: .83em;
+  font-weight: 580;
+  line-height: 1;
+}
+
 :focus-visible {
   outline: 2px solid #7458aa;
   outline-offset: 3px;

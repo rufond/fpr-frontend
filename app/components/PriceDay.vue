@@ -67,9 +67,9 @@ onUnmounted(() => controller?.abort())
 
 <template>
   <InfoPopover :aria-label="`${name}, ${amount}${dayChange ? ', за день ' + formatSignedPercent(dayChange.percent) : ''}, график за 24 часа`" @opened="show" @closed="open = false" @keydown="priceChart?.navigate($event)">
-    <span class="price-line">
+    <span class="price-line" :class="valueTone(dayChange?.percent ?? '')">
       <span class="price-amount">{{ amount }}</span>
-      <span v-if="dayChange" class="day-change" :class="valueTone(dayChange.percent)">{{ formatSignedPercent(dayChange.percent) }}</span>
+      <sup v-if="dayChange" class="value-delta">{{ formatSignedPercent(dayChange.percent) }}</sup>
     </span>
     <template #detail>
       <div class="price-detail">
@@ -93,9 +93,8 @@ onUnmounted(() => controller?.abort())
 <style scoped>
 .price-line { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
 .price-amount { text-decoration: underline dotted #8e80b3; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.day-change { font-size: .76rem; font-weight: 560; color: var(--muted); }
-.day-change.positive { color: var(--positive); }
-.day-change.negative { color: var(--negative); }
+.price-line.positive { color: var(--positive); }
+.price-line.negative { color: var(--negative); }
 .price-detail { width: 256px; max-width: calc(100vw - 44px); }
 .price-detail small { display: block; color: var(--muted); margin-top: 3px; }
 .price-detail p { margin: 8px 0 3px; }

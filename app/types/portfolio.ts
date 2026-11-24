@@ -44,8 +44,15 @@ export interface Holding extends Observation {
   ipo_comparison_percent?: string
 }
 
+export interface PositionStart {
+  first_seen: string
+  previous_absent?: string
+  source_url: string
+}
+
 export interface PortfolioIndex {
   latest_valuations: Record<string, Holding>
+  position_starts?: Record<string, PositionStart>
 }
 
 export interface ClosingReference {
